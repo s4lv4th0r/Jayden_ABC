@@ -4,6 +4,20 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>ABC Caligrafia - Jayden</title>
+
+<!-- Vista previa al compartir el enlace -->
+<meta property="og:title" content="Jayden ABC - Juego de Caligrafía">
+<meta property="og:description" content="Juego infantil para aprender letras y palabras.">
+<meta property="og:image" content="https://s4lv4th0r.github.io/Jayden_ABC/burro.png?v=4">
+<meta property="og:url" content="https://s4lv4th0r.github.io/Jayden_ABC/">
+<meta property="og:type" content="website">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jayden ABC - Juego de Caligrafía">
+<meta name="twitter:description" content="Juego infantil para aprender letras y palabras.">
+<meta name="twitter:image" content="https://s4lv4th0r.github.io/Jayden_ABC/burro.png?v=4">
+
+<link rel="icon" href="burro.png">
 <link href="https://fonts.googleapis.com/css2?family=Playwrite+ES&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -161,7 +175,7 @@ function App() {
     });
     if (fontOk) {
       ctx.save();
-      ctx.font = (mode==="word"?"72":"280") + "px 'Playwrite ES',cursive";
+      ctx.font = (mode==="word" ? "72" : mode==="may" ? "230" : "220") + "px 'Playwrite ES',cursive";
       ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillStyle = c + "22";
       ctx.fillText(dl, 215, 178);
@@ -188,8 +202,8 @@ function App() {
     const W = 430;
     const H = 340;
 
-    // Validacion especial para PALABRAS:
-    // Mas permisiva, porque una palabra completa siempre varia mas que una sola letra.
+    // PALABRAS: validación más amable para niños.
+    // Comprueba que haya escrito algo con forma de palabra, sin exigir que coincida píxel a píxel.
     if (mode === "word") {
       const pts = strokes.flat();
       const xs = pts.map(p=>p.x);
@@ -198,11 +212,11 @@ function App() {
       const rY = Math.max(...ys)-Math.min(...ys);
 
       const bien =
-        total >= 90 &&      // ha dibujado suficiente
-        rX >= 90 &&         // ocupa ancho de palabra
-        rY >= 25 &&         // tiene altura minima
-        rY <= 180 &&        // no es un garabato gigante
-        rX <= 390;          // no se sale demasiado del cuaderno
+        total >= 90 &&
+        rX >= 90 &&
+        rY >= 22 &&
+        rY <= 190 &&
+        rX <= 395;
 
       setValidated(true);
 
@@ -217,15 +231,16 @@ function App() {
       return;
     }
 
-    // Validacion precisa para LETRAS:
-    // Usa una zona de tolerancia alrededor del perfil de la letra.
+    // LETRAS: validación con zona de tolerancia alrededor del perfil.
+    const letterFontSize = mode === "may" ? 230 : 220;
+
     const template = document.createElement("canvas");
     template.width = W;
     template.height = H;
     const tctx = template.getContext("2d");
 
     tctx.clearRect(0, 0, W, H);
-    tctx.font = "280px 'Playwrite ES', cursive";
+    tctx.font = letterFontSize + "px 'Playwrite ES', cursive";
     tctx.textAlign = "center";
     tctx.textBaseline = "middle";
     tctx.fillStyle = "black";
@@ -259,11 +274,11 @@ function App() {
     const tolctx = tolerance.getContext("2d");
 
     tolctx.clearRect(0, 0, W, H);
-    tolctx.font = "280px 'Playwrite ES', cursive";
+    tolctx.font = letterFontSize + "px 'Playwrite ES', cursive";
     tolctx.textAlign = "center";
     tolctx.textBaseline = "middle";
     tolctx.lineJoin = "round";
-    tolctx.lineWidth = 54; // tolerancia mas amable para niños
+    tolctx.lineWidth = 56;
     tolctx.strokeStyle = "black";
     tolctx.strokeText(dl, 215, 178);
     tolctx.fillStyle = "black";
@@ -291,9 +306,9 @@ function App() {
     const outsideRatio = outsidePixels / Math.max(drawnPixels, 1);
 
     const bien =
-      coverage >= 0.20 &&
-      outsideRatio <= 0.50 &&
-      total >= 60;
+      coverage >= 0.18 &&
+      outsideRatio <= 0.55 &&
+      total >= 55;
 
     setValidated(true);
 
@@ -346,7 +361,7 @@ function App() {
 
       {/* MODO */}
       <div style={{display:"flex",gap:6,marginBottom:10,width:"100%",maxWidth:430}}>
-        {[["may","A May."],["min","a Min."],["word","Palabra"]].map(([m,label])=>(
+        {[["may","Mayúscula"],["min","Minúscula"],["word","Palabra"]].map(([m,label])=>(
           <button key={m} onClick={()=>changeMode(m)} style={{flex:1,padding:"10px 0",fontSize:13,fontWeight:"bold",border:"none",borderRadius:14,cursor:"pointer",fontFamily:PW,background:mode===m?c:"rgba(255,255,255,0.6)",color:mode===m?"white":"#555",boxShadow:mode===m?"0 4px 10px "+c+"88":"none",transition:"all .25s"}}>{label}</button>
         ))}
       </div>
