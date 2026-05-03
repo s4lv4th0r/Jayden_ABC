@@ -4,15 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>ABC Caligrafia - Jayden</title>
-<meta property="og:title" content="Jayden ABC - Juego de Caligrafía">
-<meta property="og:description" content="Juego infantil para aprender letras y palabras.">
-<meta property="og:image" content="https://s4lv4th0r.github.io/Jayden_ABC/burro.png?v=3">
-<meta property="og:url" content="https://s4lv4th0r.github.io/Jayden_ABC/">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Jayden ABC - Juego de Caligrafía">
-<meta name="twitter:description" content="Juego infantil para aprender letras y palabras.">
-<meta name="twitter:image" content="https://s4lv4th0r.github.io/Jayden_ABC/burro.png?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Playwrite+ES&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -188,7 +179,7 @@ function App() {
   const validate = () => {
     if (validated) return;
 
-    const total = strokes.reduce((a, s) => a + s.length, 0);
+    const total = strokes.reduce((a,s) => a+s.length, 0);
     if (total < 30) {
       alert("Dibuja mas!");
       return;
@@ -197,24 +188,56 @@ function App() {
     const W = 430;
     const H = 340;
 
-    // 1) Mascara exacta de la letra/palabra modelo
+    // Validacion especial para PALABRAS:
+    // Mas permisiva, porque una palabra completa siempre varia mas que una sola letra.
+    if (mode === "word") {
+      const pts = strokes.flat();
+      const xs = pts.map(p=>p.x);
+      const ys = pts.map(p=>p.y);
+      const rX = Math.max(...xs)-Math.min(...xs);
+      const rY = Math.max(...ys)-Math.min(...ys);
+
+      const bien =
+        total >= 90 &&      // ha dibujado suficiente
+        rX >= 90 &&         // ocupa ancho de palabra
+        rY >= 25 &&         // tiene altura minima
+        rY <= 180 &&        // no es un garabato gigante
+        rX <= 390;          // no se sale demasiado del cuaderno
+
+      setValidated(true);
+
+      if (bien) {
+        setResult("bien");
+        if (!learnedWord.includes(word)) setLearnedWord(p=>[...p,word]);
+        setCoins(n=>n+reward);
+        setTimeout(()=>setResult(null), 4000);
+      } else {
+        setResult("mal");
+      }
+      return;
+    }
+
+    // Validacion precisa para LETRAS:
+    // Usa una zona de tolerancia alrededor del perfil de la letra.
     const template = document.createElement("canvas");
     template.width = W;
     template.height = H;
     const tctx = template.getContext("2d");
+
     tctx.clearRect(0, 0, W, H);
-    tctx.font = (mode === "word" ? "72" : "280") + "px 'Playwrite ES', cursive";
+    tctx.font = "280px 'Playwrite ES', cursive";
     tctx.textAlign = "center";
     tctx.textBaseline = "middle";
     tctx.fillStyle = "black";
     tctx.fillText(dl, 215, 178);
+
     const templateData = tctx.getImageData(0, 0, W, H).data;
 
-    // 2) Mascara del dibujo del niño
     const drawn = document.createElement("canvas");
     drawn.width = W;
     drawn.height = H;
     const dctx = drawn.getContext("2d");
+
     dctx.clearRect(0, 0, W, H);
     strokes.forEach(s => {
       if (s.length < 2) return;
@@ -222,28 +245,30 @@ function App() {
       dctx.moveTo(s[0].x, s[0].y);
       s.forEach(p => dctx.lineTo(p.x, p.y));
       dctx.strokeStyle = "black";
-      dctx.lineWidth = mode === "word" ? 18 : 26;
+      dctx.lineWidth = 26;
       dctx.lineCap = "round";
       dctx.lineJoin = "round";
       dctx.stroke();
     });
+
     const drawnData = dctx.getImageData(0, 0, W, H).data;
 
-    // 3) Zona de tolerancia alrededor del perfil de la letra
     const tolerance = document.createElement("canvas");
     tolerance.width = W;
     tolerance.height = H;
     const tolctx = tolerance.getContext("2d");
+
     tolctx.clearRect(0, 0, W, H);
-    tolctx.font = (mode === "word" ? "72" : "280") + "px 'Playwrite ES', cursive";
+    tolctx.font = "280px 'Playwrite ES', cursive";
     tolctx.textAlign = "center";
     tolctx.textBaseline = "middle";
     tolctx.lineJoin = "round";
-    tolctx.lineWidth = mode === "word" ? 34 : 46;
+    tolctx.lineWidth = 54; // tolerancia mas amable para niños
     tolctx.strokeStyle = "black";
     tolctx.strokeText(dl, 215, 178);
     tolctx.fillStyle = "black";
     tolctx.fillText(dl, 215, 178);
+
     const tolData = tolctx.getImageData(0, 0, W, H).data;
 
     let templatePixels = 0;
@@ -265,25 +290,19 @@ function App() {
     const coverage = coveredPixels / Math.max(templatePixels, 1);
     const outsideRatio = outsidePixels / Math.max(drawnPixels, 1);
 
-    // Ajustes de precision: baja minCoverage si quieres que sea mas facil.
-    // Baja maxOutside si quieres que sea mas estricto.
-    const minCoverage = mode === "word" ? 0.22 : 0.28;
-    const maxOutside = mode === "word" ? 0.45 : 0.35;
-
     const bien =
-      coverage >= minCoverage &&
-      outsideRatio <= maxOutside &&
-      total >= (mode === "word" ? 150 : 70);
+      coverage >= 0.20 &&
+      outsideRatio <= 0.50 &&
+      total >= 60;
 
     setValidated(true);
 
     if (bien) {
       setResult("bien");
-      if (mode === "may" && !learnedMay.includes(letter)) setLearnedMay(p => [...p, letter]);
-      if (mode === "min" && !learnedMin.includes(letter)) setLearnedMin(p => [...p, letter]);
-      if (mode === "word" && !learnedWord.includes(word)) setLearnedWord(p => [...p, word]);
-      setCoins(n => n + reward);
-      setTimeout(() => setResult(null), 4000);
+      if (mode==="may" && !learnedMay.includes(letter)) setLearnedMay(p=>[...p,letter]);
+      if (mode==="min" && !learnedMin.includes(letter)) setLearnedMin(p=>[...p,letter]);
+      setCoins(n=>n+reward);
+      setTimeout(()=>setResult(null), 4000);
     } else {
       setResult("mal");
     }
