@@ -171,10 +171,10 @@ function App() {
     });
     if (fontOk) {
       ctx.save();
-      ctx.font = (mode==="word" ? "72" : mode==="may" ? "230" : "220") + "px 'Playwrite ES',cursive";
+      ctx.font = (mode==="word" ? "72" : mode==="may" ? "190" : "175") + "px 'Playwrite ES',cursive";
       ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillStyle = c + "22";
-      ctx.fillText(dl, 215, 178);
+      ctx.fillText(dl, 215, mode==="word" ? 178 : 188);
       ctx.restore();
     }
     [...strokes, cur].forEach(s => {
