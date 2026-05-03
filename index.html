@@ -125,6 +125,59 @@ function App() {
   const word = WD[idx];
   const dl = mode === "may" ? letter : mode === "min" ? letter.toLowerCase() : word;
   const PW = "'Playwrite ES', cursive";
+
+  const getGuideFontSize = () => {
+    if (mode === "word") return 72;
+    return mode === "may" ? 155 : 150;
+  };
+
+  const getGuideY = () => {
+    if (mode === "word") return 178;
+    return 178;
+  };
+
+  const playSuccessSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // do, mi, sol, do
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + i * 0.12 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.11);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.12);
+      });
+    } catch (e) {}
+  };
+
+  const playErrorSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const notes = [220, 165]; // tono de fallo suave
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.18);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + i * 0.18 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.18);
+        osc.stop(ctx.currentTime + i * 0.18 + 0.17);
+      });
+    } catch (e) {}
+  };
+
   const reward = mode === "word" ? 5 : 3;
 
   const getPos = (e) => {
@@ -171,10 +224,10 @@ function App() {
     });
     if (fontOk) {
       ctx.save();
-      ctx.font = (mode==="word" ? "72" : mode==="may" ? "190" : "175") + "px 'Playwrite ES',cursive";
+      ctx.font = getGuideFontSize() + "px 'Playwrite ES',cursive";
       ctx.textAlign="center"; ctx.textBaseline="middle";
       ctx.fillStyle = c + "22";
-      ctx.fillText(dl, 215, mode==="word" ? 178 : 188);
+      ctx.fillText(dl, 215, getGuideY());
       ctx.restore();
     }
     [...strokes, cur].forEach(s => {
@@ -196,14 +249,16 @@ function App() {
     const rX = Math.max(...xs)-Math.min(...xs), rY = Math.max(...ys)-Math.min(...ys);
     const bien = total > (mode==="word"?150:80) && (rX*rY)/(430*340) > (mode==="word"?0.08:0.04);
     if (bien) {
-      setResult("bien");
+      playSuccessSound();
+        setResult("bien");
       if (mode==="may" && !learnedMay.includes(letter)) setLearnedMay(p=>[...p,letter]);
       if (mode==="min" && !learnedMin.includes(letter)) setLearnedMin(p=>[...p,letter]);
       if (mode==="word" && !learnedWord.includes(word)) setLearnedWord(p=>[...p,word]);
       setCoins(n=>n+reward);
       setTimeout(()=>setResult(null), 4000);
     } else {
-      setResult("mal");
+      playErrorSound();
+        setResult("mal");
     }
   };
 
